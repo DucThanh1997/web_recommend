@@ -19,6 +19,7 @@ from sklearn import utils
 
 class PredictOverall(Resource):
     def post(self):
+        print("1")
         parser = reqparse.RequestParser()
         parser.add_argument('resource_csv',
                          type=FileStorage,
@@ -32,7 +33,7 @@ class PredictOverall(Resource):
                          type=str, 
                          help="ko duoc bo trong")
         data = parser.parse_args()
-
+        print("2")
         if data["thuat_toan"] == "":
             return {
                 "msg": "Bad request"
@@ -47,7 +48,7 @@ class PredictOverall(Resource):
         list_student = list(dataToPredict.iloc[:, 1:].values)
         header = list(dataToPredict.columns.values)
         header = header[1:]
-
+        print("3")
         # kiểm tra và thay đổi dữ liệu theo form chuẩn
         try:
             list_student_verify = VerifyAndChangeData(header_list=header, result_list=list_student)
@@ -59,19 +60,27 @@ class PredictOverall(Resource):
         print("list_student_verify: ", list_student_verify)
         ma_sv = list(dataToPredict.iloc[:, 0].values)
         # B1 biến đổi dữ liệu và dự đoán tốt nghiệp đầu ra
-        if data["thuat_toan"] == "knn":
-            predict_result = transformed_mark_to_number_and_predict_results(list_student_verify, data["khoa"])
+        print("data: ", data["thuat_toan"])
+        if data["thuat_toan"] == "Knn":
+            predict_result_toan_tin = transformed_mark_to_number_and_predict_results(list_student_verify, "Toan_tin")
+            predict_result_kinh_te = transformed_mark_to_number_and_predict_results(list_student_verify, "kinh_te")
+            predict_result_ngon_ngu = transformed_mark_to_number_and_predict_results(list_student_verify, "ngon_ngu")
+            print("toan_tin: ", predict_result_toan_tin[0][0])
+            print("kinh_te: ", predict_result_kinh_te[0][0])
+            print("ngon_ngu: ", predict_result_ngon_ngu[0][0])
         else: 
-            predict_result_toan_tin = transformed_mark_to_number_and_predict_results(list_student_verify, "Toan_tin_")
-            predict_result_kinh_te = transformed_mark_to_number_and_predict_results(list_student_verify, "kinh_te_")
-            predict_result_ngon_ngu = transformed_mark_to_number_and_predict_results(list_student_verify, "ngon_ngu_")
+            predict_result_toan_tin = transformed_mark_to_number_and_predict_results(list_student_verify, "Toan_tin")
+            predict_result_kinh_te = transformed_mark_to_number_and_predict_results(list_student_verify, "kinh_te")
+            predict_result_ngon_ngu = transformed_mark_to_number_and_predict_results(list_student_verify, "ngon_ngu")
         # list_student_fewer = list(dataToPredict.iloc[1, 1:3].values)
         # print("list_student_fewer: ", list_student_fewer)
         # # sau có dữ liệu full thì bỏ dấu ngoặc ở dòng dưới đi
         # predict_result_1 = transformed_mark_to_number_and_predict_job([list_student_fewer])
         # print("predict_result_1: ", predict_result_1)
         return {
-                "toan_tin": predict_result_toan_tin
+                "toan_tin": predict_result_toan_tin[0][0],
+                "kinh_te": predict_result_kinh_te[0][0],
+                "ngon_ngu": predict_result_ngon_ngu[0][0],
             }, 200
 
 def transformed_mark_to_number_and_predict_results(list_student, khoa):
@@ -125,9 +134,12 @@ def transformed_mark_to_number_and_predict_job(list_student):
     return result
 
 def VerifyAndChangeData(header_list, result_list):
-    sort_list = ["CS100", "EC102", "GE100", "GE101", "GE102","GE201", "GE202", "GF101", "GF102", "GI101", "GI102", 
-                 "GJ101", "GJ102", "GZ101", "GZ102", "MA101", "MA103", "ML111", "ML112", "ML202", "ML203", "NA151", 
-                 "PG100", "PG121", "PV101", "SH131"]
+    sort_list = ["CS100", "EC101", "EC102", "GE100", "GE101", "GE102", "GE141", "GE142", "GE143", "GE201", 
+                 "GE202", "GE244", "GE245", "GE246", "GF101", "GF102", "GI101", "GI102", "GJ101", "GJ102", 
+                 "GJ161", "GJ162", "GJ163", "GJ171", "GJ172", "GJ173", "GZ101", "GZ102", "GZ131", "GZ151A",
+                 "GZ152A", "IS206", "MA101", "MA103", "ML111", "ML112", "ML202", "ML203", "NA151", "PG100",
+                 "PG121", "PV101", "SH121", "SH131", "SO101"]
+
 
     
     # kiểm tra 2 list có bằng nhau ko
