@@ -17,9 +17,37 @@ from sklearn import preprocessing
 from sklearn import utils
 
 
+class Load_Scrore_Table(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('resource_csv',
+                         type=FileStorage,
+                         location='files',
+                         required=True,
+                         help='CSV file')
+        data = parser.parse_args()
+        print("data: ", data)
+        try:
+             dataToPredict = pd.read_csv(data["resource_csv"])
+        except Exception as e: 
+            print("err: ", e)
+            return {
+                "msg": "Bad request"
+            }, 400
+
+        list_student = dataToPredict.iloc[:, :].values.tolist()
+        print("type: ", type(list_student))
+        header = list(dataToPredict.columns.values)
+        print("list_student: ", list_student)
+        print("header: ", header)
+        return {
+            "values": list_student[0],
+            "header": header
+        }, 200
+
+
 class PredictOverall(Resource):
     def post(self):
-        print("1")
         parser = reqparse.RequestParser()
         parser.add_argument('resource_csv',
                          type=FileStorage,
@@ -33,7 +61,6 @@ class PredictOverall(Resource):
                          type=str, 
                          help="ko duoc bo trong")
         data = parser.parse_args()
-        print("2")
         if data["thuat_toan"] == "":
             return {
                 "msg": "Bad request"
@@ -48,7 +75,6 @@ class PredictOverall(Resource):
         list_student = list(dataToPredict.iloc[:, 1:].values)
         header = list(dataToPredict.columns.values)
         header = header[1:]
-        print("3")
         # kiểm tra và thay đổi dữ liệu theo form chuẩn
         try:
             list_student_verify = VerifyAndChangeData(header_list=header, result_list=list_student)
@@ -65,22 +91,49 @@ class PredictOverall(Resource):
             predict_result_toan_tin = transformed_mark_to_number_and_predict_results(list_student_verify, "Toan_tin")
             predict_result_kinh_te = transformed_mark_to_number_and_predict_results(list_student_verify, "kinh_te")
             predict_result_ngon_ngu = transformed_mark_to_number_and_predict_results(list_student_verify, "ngon_ngu")
+            predict_result_y_te = transformed_mark_to_number_and_predict_results(list_student_verify, "y_te")
+            predict_result_xa_hoi = transformed_mark_to_number_and_predict_results(list_student_verify, "xa_hoi")
             print("toan_tin: ", predict_result_toan_tin[0][0])
             print("kinh_te: ", predict_result_kinh_te[0][0])
             print("ngon_ngu: ", predict_result_ngon_ngu[0][0])
+            print("y_te: ", predict_result_y_te[0][0])
+            print("xa_hoi: ", predict_result_xa_hoi[0][0])
+        elif data["thuat_toan"] == "ID3":
+            predict_result_toan_tin = transformed_mark_to_number_and_predict_results_id3(list_student_verify, "Toan_tin")
+            predict_result_kinh_te = transformed_mark_to_number_and_predict_results_id3(list_student_verify, "kinh_te")
+            predict_result_ngon_ngu = transformed_mark_to_number_and_predict_results_id3(list_student_verify, "ngon_ngu")
+            predict_result_y_te = transformed_mark_to_number_and_predict_results_id3(list_student_verify, "y_te")
+            predict_result_xa_hoi = transformed_mark_to_number_and_predict_results_id3(list_student_verify, "xa_hoi")
+            print("toan_tin: ", predict_result_toan_tin[0][0])
+            print("kinh_te: ", predict_result_kinh_te[0][0])
+            print("ngon_ngu: ", predict_result_ngon_ngu[0][0])
+            print("y_te: ", predict_result_y_te[0][0])
+            print("xa_hoi: ", predict_result_xa_hoi[0][0])
+
         else: 
-            predict_result_toan_tin = transformed_mark_to_number_and_predict_results(list_student_verify, "Toan_tin")
-            predict_result_kinh_te = transformed_mark_to_number_and_predict_results(list_student_verify, "kinh_te")
-            predict_result_ngon_ngu = transformed_mark_to_number_and_predict_results(list_student_verify, "ngon_ngu")
+            predict_result_toan_tin = transformed_mark_to_number_and_predict_job(list_student_verify, "Toan_tin")
+            predict_result_kinh_te = transformed_mark_to_number_and_predict_job(list_student_verify, "kinh_te")
+            predict_result_ngon_ngu = transformed_mark_to_number_and_predict_job(list_student_verify, "ngon_ngu")
+            predict_result_y_te = transformed_mark_to_number_and_predict_job(list_student_verify, "y_te")
+            predict_result_xa_hoi = transformed_mark_to_number_and_predict_job(list_student_verify, "xa_hoi")
+            print("toan_tin: ", predict_result_toan_tin[0][0])
+            print("kinh_te: ", predict_result_kinh_te[0][0])
+            print("ngon_ngu: ", predict_result_ngon_ngu[0][0])
+            print("y_te: ", predict_result_y_te[0][0])
+            print("xa_hoi: ", predict_result_xa_hoi[0][0])
         # list_student_fewer = list(dataToPredict.iloc[1, 1:3].values)
         # print("list_student_fewer: ", list_student_fewer)
         # # sau có dữ liệu full thì bỏ dấu ngoặc ở dòng dưới đi
         # predict_result_1 = transformed_mark_to_number_and_predict_job([list_student_fewer])
         # print("predict_result_1: ", predict_result_1)
+
+        print("toan_tin: ", predict_result_toan_tin[0][0])
         return {
                 "toan_tin": predict_result_toan_tin[0][0],
                 "kinh_te": predict_result_kinh_te[0][0],
                 "ngon_ngu": predict_result_ngon_ngu[0][0],
+                "y_te": predict_result_y_te[0][0],
+                "xa_hoi": predict_result_xa_hoi[0][0],
             }, 200
 
 def transformed_mark_to_number_and_predict_results(list_student, khoa):
@@ -106,31 +159,91 @@ def transformed_mark_to_number_and_predict_results(list_student, khoa):
                 print("lot: ", mark)
         # mark_transformed = np.array(mark_transformed)
         predicted = model.predict([mark_transformed])
-        result.append(predicted)
+        if predicted == [0]:
+            result.append(["không ra được trường"])
+        elif predicted == [1]:
+            result.append(["giỏi"])
+        elif predicted == [2]:
+            result.append(["khá"])
+        elif predicted == [3]:
+            result.append(["trung bình"])
+        elif predicted == [4]:
+            result.append(["trung bình"])
     
     return result
 
-def transformed_mark_to_number_and_predict_job(list_student):
-    filename = "naive.pkl"
+def transformed_mark_to_number_and_predict_job(list_student, khoa):
+    filename = khoa + "_naive.pkl"
     model = pickle.load(open(filename, 'rb'))
     result = []
     for student in list_student:
         mark_transformed = []
         for mark in student:
-            if mark >= 4 and mark < 7:
-                mark_transformed.extend([1,0,0,0])
-            elif mark >= 7 and mark < 8:
-                mark_transformed.extend([0,1,0,0])
-            elif mark >= 8 and mark < 9:
-                mark_transformed.extend([0,0,1,0])
-            elif mark >= 9 and mark <= 10:
-                mark_transformed.extend([0,0,0,1])
+            if mark >= 4.5 and mark < 5.5:
+                mark_transformed.extend([0,0,0,0,0,1])
+            elif mark >= 5.5 and mark < 6.5:
+                mark_transformed.extend([0,0,0,0,1,0])
+            elif mark > 0 and mark < 4.5:
+                mark_transformed.extend([0,0,0,1,0,0])
+            elif mark >= 6.5 and mark < 8:
+                mark_transformed.extend([0,0,1,0,0,0])
+            elif mark == -1:
+                mark_transformed.extend([0,1,0,0,0,0])
+            elif mark >= 8 :
+                mark_transformed.extend([1,0,0,0,0,0])
+            elif mark == 0 :
+                mark_transformed.extend([0,0,0,0,0,0])
             else:
                 print("lot: ", mark)
         # mark_transformed = np.array(mark_transformed)
-        print("mark1: ", [mark_transformed])
+        print("mark1: ", len(mark_transformed))
         predicted = model.predict([mark_transformed])
-        result.append(predicted[0])
+        if predicted == [0]:
+            result.append(["không ra được trường"])
+        elif predicted == [1]:
+            result.append(["giỏi"])
+        elif predicted == [2]:
+            result.append(["khá"])
+        elif predicted == [3]:
+            result.append(["trung bình"])
+        elif predicted == [4]:
+            result.append(["trung bình"])
+    return result
+
+def transformed_mark_to_number_and_predict_results_id3(list_student, khoa):
+    filename = khoa + "_id3.pkl"
+    model = pickle.load(open(filename, 'rb'))
+    result = []
+    for student in list_student:
+        mark_transformed = []
+        for mark in student:
+            if mark >= 4 and mark < 5.5:
+                mark_transformed.append(constant.DIEM_Y)
+            elif mark >= 5.5 and mark < 6.5:
+                mark_transformed.append(constant.DIEM_TB)
+            elif mark >= 6.5 and mark <= 8:
+                mark_transformed.append(constant.DIEM_K)
+            elif mark >= 8 and mark <= 10:
+                mark_transformed.append(constant.DIEM_G)
+            elif mark == 0:
+                mark_transformed.append(constant.KO_HOC)
+            elif mark == -1:
+                mark_transformed.append(constant.CT)
+            else:
+                print("lot: ", mark)
+        # mark_transformed = np.array(mark_transformed)
+        predicted = model.predict([mark_transformed])
+        if predicted == [0]:
+            result.append(["không ra được trường"])
+        elif predicted == [1]:
+            result.append(["giỏi"])
+        elif predicted == [2]:
+            result.append(["khá"])
+        elif predicted == [3]:
+            result.append(["trung bình"])
+        elif predicted == [4]:
+            result.append(["trung bình"])
+    
     return result
 
 def VerifyAndChangeData(header_list, result_list):

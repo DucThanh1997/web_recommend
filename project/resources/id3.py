@@ -6,6 +6,7 @@ from werkzeug.datastructures import FileStorage
 from sklearn.metrics import accuracy_score 
 from sklearn.model_selection import train_test_split
 import pickle
+from sklearn import tree
 
 class ID3(Resource):
     def post(self):
@@ -79,11 +80,11 @@ class TrainID3(Resource):
         X = dataToTrain.iloc[:, :-1]
         
         y = dataToTrain.iloc[:, -1]
-        tree = DecisionTreeID3(max_depth = 3, min_samples_split = 2)
-        tree.fit(X, y)
+        decisionTree = tree.DecisionTreeClassifier(max_depth=None, criterion='entropy', class_weight=None)
+        decisionTree = decisionTree.fit(X,y)
 
         X_train, X_test, y_train, y_test = train_test_split(X, y)
-        y_pred = tree.predict(X_test)
+        y_pred = decisionTree.predict(X_test)
         score = accuracy_score(y_test, y_pred)
         pkl_filename = "id3.pkl"
         with open(pkl_filename, 'wb') as file:
@@ -93,6 +94,8 @@ class TrainID3(Resource):
                 "msg": "okke",
                 "score": score
             }, 200
+
+
 
 class TrainID3Test(Resource):
     def post(self):

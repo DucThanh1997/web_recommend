@@ -30,12 +30,11 @@ DB.init(
 
 api.add_resource(TrainingOverall, "/training-overall")
 api.add_resource(PredictOverall, "/predict-overall")
+api.add_resource(Load_Scrore_Table, "/load_score")
 # api.add_resource(Knn, "/knn")
 api.add_resource(NaiveBayes, "/naive")
 api.add_resource(ID3, "/id3")
-api.add_resource(TrainID3, "/train-id3")
 api.add_resource(TrainNaive, "/train-naive")
-# api.add_resource(TrainKnn, "/train-knn")
 api.add_resource(TrainNaiveTest, "/train-naive-test")
 api.add_resource(TrainID3Test, "/train-id3-test")
 api.add_resource(Subjects, "/subject")
