@@ -8,9 +8,10 @@ from model import DB
 from resources.knn import *
 from resources.naive_bayes import *
 from resources.id3 import *
-from resources.subject import *
 from resources.training_overall import *
 from resources.predict_overall import *
+from resources.training_sample import *
+from resources.predictSample import *
 
 
 app = Flask(__name__)
@@ -37,8 +38,11 @@ api.add_resource(ID3, "/id3")
 api.add_resource(TrainNaive, "/train-naive")
 api.add_resource(TrainNaiveTest, "/train-naive-test")
 api.add_resource(TrainID3Test, "/train-id3-test")
-api.add_resource(Subjects, "/subject")
 api.add_resource(RecommendSystem, "/recommend")
+api.add_resource(Preprocessing_Predict_Data, "/preprocess")
+api.add_resource(TrainingSample, "/train-sample")
+api.add_resource(PredictSample, "/predict-sample")
+
 # api.add_resource(User, "/user", "/user/<string:ma>")
 
 # api.add_resource(

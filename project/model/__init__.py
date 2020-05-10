@@ -34,7 +34,7 @@ class DB:
 
     @staticmethod
     def update_one(collection, query, values):
-        return DB.DATABASE[collection].update_one(query, values)
+        return DB.DATABASE[collection].update_one(query, {'$set': values})
 
     @staticmethod
     def find_all(collection, query, limit=10000, skip=0, sort=1, sort_by=None):
