@@ -9,21 +9,21 @@
       <mobile-menu slot="content"></mobile-menu>
       <sidebar-link to="/dashboard">
         <md-icon>dashboard</md-icon>
-        <p style="font-size:18px">Trainning</p>
+        <p style="font-size:15px">Huấn luyện </p>
       </sidebar-link>
       <sidebar-link to="/user">
         <md-icon>content_paste</md-icon>
-        <p style="font-size:18px">Predict</p>
+        <p style="font-size:15px">Dự đoán</p>
       </sidebar-link>
-      <!-- <sidebar-link to="/table">
+      <sidebar-link to="/table">
         <md-icon>content_paste</md-icon>
-        <p style="font-size:18px">Table list</p>
+        <p style="font-size:15px">Huấn luyện dữ liệu mẫu</p>
       </sidebar-link>
       <sidebar-link to="/typography">
         <md-icon>library_books</md-icon>
-        <p style="font-size:18px">Typography</p>
+        <p style="font-size:15px">Dự đoán dữ liệu mẫu</p>
       </sidebar-link>
-      <sidebar-link to="/icons">
+       <!--<sidebar-link to="/icons">
         <md-icon>bubble_chart</md-icon>
         <p style="font-size:18px">Icons</p>
       </sidebar-link>

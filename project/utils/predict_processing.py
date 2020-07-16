@@ -48,6 +48,8 @@ def Add_incompliance_subject_to_predict(predict_subjects, trainning_subjects, re
 
 def Sort_predict_subject_list(predict_subjects, trainning_subjects, result_list):
     correct_index = []
+    print("trainning_subjects: ", trainning_subjects)
+    print("result_list: ", result_list)
     # tìm thứ tự đúng
     for element, subject in enumerate(trainning_subjects):
         if subject == predict_subjects[element]:
@@ -61,6 +63,7 @@ def Sort_predict_subject_list(predict_subjects, trainning_subjects, result_list)
                     continue
     print("result_list: ", result_list)
     print(len(result_list))
+    print(len(correct_index))
     stop_change = []
     for number, mark in enumerate(result_list):
         if number == correct_index[number]:
@@ -86,7 +89,8 @@ def VerifyAndChangeData(khoa, thuat_toan, predict_subjects, result_list):
     training_subjects = get_header_list(khoa=khoa, thuat_toan=thuat_toan)
     if training_subjects == -1:
         return "none_training"
-    print("training : ", training_subjects)
+    print("training: ", training_subjects)
+    print("predict subject: ", predict_subjects)
     # kiểm tra 2 list có bằng nhau ko
     if training_subjects == predict_subjects:
         return predict_subjects, result_list, [], []

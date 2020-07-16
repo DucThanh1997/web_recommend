@@ -5,14 +5,12 @@ from utils.predict_processing import VerifyAndChangeData
 
 from flask_restful import reqparse, Resource
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.naive_bayes import GaussianNB
 import pickle
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score 
 from common import constant
-import collections 
 from sklearn.neighbors import KNeighborsClassifier
 from werkzeug.datastructures import FileStorage
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
@@ -41,10 +39,7 @@ class Load_Scrore_Table(Resource):
             }, 400
 
         list_student = dataToPredict.iloc[:, :].values.tolist()
-        print("type: ", type(list_student))
         header = list(dataToPredict.columns.values)
-        print("list_student: ", type(list_student))
-        print("header: ", type(header))
         return {
             "values": list_student[0],
             "header": header
@@ -65,7 +60,6 @@ class Preprocessing_Predict_Data(Resource):
                             type=str, 
                             help="ko duoc bo trong")
         data = parser.parse_args()
-        print("data: ", data)
         if data["thuat_toan"] == "":
             return {
                 "msg": "Bad request"
@@ -82,27 +76,32 @@ class Preprocessing_Predict_Data(Resource):
         print("result_list: ", result_list[0])
         print("predict_subjects: ", predict_subjects)
         # kiểm tra và thay đổi dữ liệu theo form chuẩn
-        try:
-            predict_subjects, ordered_result_list, incompliance_subject, unecessary_subject = VerifyAndChangeData(khoa=data["khoa"],
-                                                                                                                  thuat_toan=data["thuat_toan"],
-                                                                                                                  predict_subjects=predict_subjects,
-                                                                                                                  result_list=result_list[0])
-        except Exception as e:
-            print("err: ", e)
-            return {
-                "msg": "bad_request"
-            }, 400                                                                                    
+        # try:
+        #     predict_subjects, ordered_result_list, incompliance_subject, unecessary_subject = VerifyAndChangeData(khoa=data["khoa"],
+        #                                                                                                           thuat_toan=data["thuat_toan"],
+        #                                                                                                           predict_subjects=predict_subjects,
+        #                                                                                                           result_list=result_list[0])
+        #     print("predict_subjects123: ", predict_subjects)
+        #     print("ordered_result_list: ", ordered_result_list)
+        # except Exception as e:
+        #     print("err: ", e)
+        #     return {
+        #         "msg": "bad_request"
+        #     }, 400                                                                                    
+        # return {
+        #     "predict_subjects": predict_subjects, 
+        #     "ordered_result_list": ordered_result_list, 
+        #     "incompliance_subject": incompliance_subject, 
+        #     "unecessary_subject": unecessary_subject
+
+        # }, 200
         return {
             "predict_subjects": predict_subjects, 
-            "ordered_result_list": ordered_result_list, 
-            "incompliance_subject": incompliance_subject, 
-            "unecessary_subject": unecessary_subject
+            "ordered_result_list": result_list[0], 
         }, 200
-
 
 class PredictOverall(Resource):
     def post(self):
-        print("1")
         parser = reqparse.RequestParser()
         parser.add_argument('resource_csv',
                          type=FileStorage,
@@ -145,20 +144,19 @@ class PredictOverall(Resource):
             }, 400
         
         # B1 biến đổi dữ liệu và dự đoán tốt nghiệp đầu ra
-        print("data: ", data["khoa"])
+        print("data: ", data["thuat_toan"])
         if data["thuat_toan"] == "knn":
-            predict_result_toan_tin, score, recommend = transformed_mark_to_number_and_predict_knn(ordered_result_list, data["khoa"])
-            print("toan_tin: ", predict_result_toan_tin)
+            predict, score, recommend = transformed_mark_to_number_and_predict_knn(ordered_result_list, data["khoa"])
 
         elif data["thuat_toan"] == "ID3":
-            predict_result_toan_tin, score = transformed_mark_to_number_and_predict_id3(ordered_result_list, data["khoa"])
-            print("toan_tin: ", predict_result_toan_tin[0][0])
+            predict, score, recommend = transformed_mark_to_number_and_predict_id3(ordered_result_list, data["khoa"])
+            print("predict: ", predict)
             
 
         else: 
-            predict_result_toan_tin, score = transformed_mark_to_number_and_predict_naive(ordered_result_list, data["khoa"])
+            predict, score, recommend = transformed_mark_to_number_and_predict_naive(ordered_result_list, data["khoa"])
 
-            print("toan_tin: ", predict_result_toan_tin[0][0])
+            print("predict: ", predict)
            
         # list_student_fewer = list(dataToPredict.iloc[1, 1:3].values)
         # print("list_student_fewer: ", list_student_fewer)
@@ -166,11 +164,11 @@ class PredictOverall(Resource):
         # predict_result_1 = transformed_mark_to_number_and_predict_job([list_student_fewer])
         # print("predict_result_1: ", predict_result_1)
 
-        print("toan_tin: ", predict_result_toan_tin)
+        print("recommend: ", recommend)
         return {
-                "toan_tin": predict_result_toan_tin,
+                "toan_tin": predict[0:5],
                 "score": score,
-                # "recommend": recommend
+                "recommend": recommend
             }, 200
 
 def transformed_mark_to_number_and_predict_knn(list_student, khoa):
@@ -178,15 +176,11 @@ def transformed_mark_to_number_and_predict_knn(list_student, khoa):
     model = pickle.load(open(filename, 'rb'))
     # load saved_score
     saved_score = Score.find_one(query={"train_model": khoa + "_knn"})
- 
-    print("list: ", list_student)
     neighbors_predict = model.kneighbors([list_student])
-
     neighbours = neighbors_predict[1][0].tolist()
-    print("neighbour: ", neighbours)
+    print("neighbours: ", neighbours)
     labels = get_label_for_knn(neighbors=neighbours, model_name=khoa + "_knn")
-    print("label: ", labels)
-    results, recommend = transform_label(labels=labels)
+    results, recommend = transform_label_knn(labels=labels, khoa=khoa)
     print("result: ", results)
     print("recommend: ", recommend)
     
@@ -198,40 +192,14 @@ def transformed_mark_to_number_and_predict_naive(list_student, khoa):
     result = []
     # load saved_score
     saved_score = Score.find_one(query={"train_model": khoa + "_naive"})
-    print("list_student: ", list_student)
-    mark_transformed = []
-    # for mark in list_student:
-    #     if mark >= 4 and mark < 5.5:
-    #         mark_transformed.append(constant.DIEM_Y)
-    #     elif mark >= 5.5 and mark < 6.5:
-    #         mark_transformed.append(constant.DIEM_TB)
-    #     elif mark >= 6.5 and mark <= 8:
-    #         mark_transformed.append(constant.DIEM_K)
-    #     elif mark >= 8 and mark <= 10:
-    #         mark_transformed.append(constant.DIEM_G)
-    #     elif mark == 0:
-    #         mark_transformed.append(constant.KO_HOC)
-    #     elif mark == -1:
-    #         mark_transformed.append(constant.CT)
-    #     else:
-    #         print("lot: ", mark)
-        # mark_transformed = np.array(mark_transformed)
-    print("mark1: ", len(list_student))
-    predicted = model.predict([list_student[:]])
-    log_proba = model.predict_proba([list_student[:]])
-    print("log_proba: ", log_proba)
+
+    proba = model.predict_proba([list_student[:]])
+    print("proba: ", proba * 100000000)
+    print("predict123: ", model.predict([list_student[:]]))
+    predicted, recommend = get_label_for_naive(list(proba[0]), khoa=khoa)
+    # print("label: ", labels)
     print("predicted: ", predicted)
-    if predicted == [0]:
-        result.append(["không ra được trường"])
-    elif predicted == [1]:
-        result.append(["giỏi"])
-    elif predicted == [2]:
-        result.append(["khá"])
-    elif predicted == [3]:
-        result.append(["trung bình"])
-    elif predicted == [4]:
-        result.append(["trung bình"])
-    return result, saved_score
+    return predicted, saved_score, recommend
 
 def transformed_mark_to_number_and_predict_id3(list_student, khoa):
     filename = khoa + "_id3.pkl"
@@ -240,37 +208,16 @@ def transformed_mark_to_number_and_predict_id3(list_student, khoa):
     # load saved_score
     saved_score = Score.find_one(query={"train_model": khoa + "_id3"})
 
-    for student in list_student:
-        mark_transformed = []
-        for mark in student:
-            if mark >= 4 and mark < 5.5:
-                mark_transformed.append(constant.DIEM_Y)
-            elif mark >= 5.5 and mark < 6.5:
-                mark_transformed.append(constant.DIEM_TB)
-            elif mark >= 6.5 and mark <= 8:
-                mark_transformed.append(constant.DIEM_K)
-            elif mark >= 8 and mark <= 10:
-                mark_transformed.append(constant.DIEM_G)
-            elif mark == 0:
-                mark_transformed.append(constant.KO_HOC)
-            elif mark == -1:
-                mark_transformed.append(constant.CT)
-            else:
-                print("lot: ", mark)
-        # mark_transformed = np.array(mark_transformed)
-        predicted = model.predict([mark_transformed])
-        if predicted == [0]:
-            result.append(["không ra được trường"])
-        elif predicted == [1]:
-            result.append(["giỏi"])
-        elif predicted == [2]:
-            result.append(["khá"])
-        elif predicted == [3]:
-            result.append(["trung bình"])
-        elif predicted == [4]:
-            result.append(["trung bình"])
+    proba = model.predict_proba([list_student[:]])
+    print("proba: ", proba * 100000000)
+    print("predict123: ", model.predict([list_student[:]]))
+    predicted, recommend = get_label_for_naive(list(proba[0]), khoa=khoa)
+   
+    # print("label: ", labels)
+    print("predicted: ", predicted)
+    return predicted, saved_score, recommend
     
-    return result, saved_score
+
 
 
 def get_label_for_knn(neighbors, model_name):
@@ -284,61 +231,327 @@ def get_label_for_knn(neighbors, model_name):
         labels.append(label)
     return labels
 
-def get_label_for_naive(proba):
+def get_label_for_naive(proba, khoa):
     labels = []
-    copy_proba = proba
-    sorted(copy_proba)
+    copy_proba = proba.copy()
+    print("copy_proba: ", len(copy_proba))
+    copy_proba.sort(reverse=True)
+    print("copy_proba: ", copy_proba)
+    print("proba: ", proba)
     top_3_label = copy_proba[:3]
-
+    print("top_3_label: ", top_3_label)
+    max = 0
     for x in top_3_label:
-        label = proba.index(x)
-        labels.append(label)
-    
-    print("label: ", labels)
-    return labels
+        label = proba.index(x) + 1
+        print("label: ", label)
+        
+        if khoa == "toan_tin":
+            if label == 1:
+                nganh = "TC với xếp loại xuất sắc"
+                labels.append(nganh)
+            elif label == 2:
+                nganh = "TC với xếp loại giỏi"
+                labels.append(nganh)
+            elif label == 3:
+                nganh = "TC với xếp loại khá"
+                labels.append(nganh)
+            elif label == 4:
+                nganh = "TC với xếp loại trung bình khá"
+                labels.append(nganh)
+            elif label == 5:
+                nganh = "TC với xếp loại trung bình"
+                labels.append(nganh)
+            elif label == 6:
+                nganh = "TE với xếp loại xuất sắc"
+                labels.append(nganh)
+            elif label == 7:
+                nganh = "TE với xếp loại giỏi"
+                labels.append(nganh)
+            elif label == 8:
+                nganh = "TE với xếp loại khá"
+                labels.append(nganh)
+            elif label == 9:
+                nganh = "TE với xếp loại trung bình khá"
+                labels.append(nganh)
+            elif label == 10:
+                nganh = "TE với xếp loại trung bình"
+                labels.append(nganh)
+            elif label == 11:
+                nganh = "TI với xếp loại xuất sắc"
+                labels.append(nganh)
+            elif label == 12:
+                nganh = "TI với xếp loại giỏi"
+                labels.append(nganh)
+            elif label == 13:
+                nganh = "TI với xếp loại khá"
+                labels.append(nganh)
+            elif label == 14:
+                nganh = "TI với xếp loại trung bình khá"
+                labels.append(nganh)
+            elif label == 15:
+                nganh = "TI với xếp loại trung bình"
+                labels.append(nganh)
+            elif label == 16:
+                nganh = "TM với xếp loại xuất sắc"
+                labels.append(nganh)
+            elif label == 17:
+                nganh = "TM với xếp loại giỏi"
+                labels.append(nganh)
+            elif label == 18:
+                nganh = "TM với xếp loại khá"
+                labels.append(nganh)
+            elif label == 19:
+                nganh = "TM với xếp loại trung bình khá"
+                labels.append(nganh)
+            elif label == 20:
+                nganh = "TM với xếp loại trung bình"
+                labels.append(nganh)
 
-def transform_label(labels):
+            print("nganh: ", nganh)
+            if max <= (label % 5): 
+                recommend = nganh[0:2]
+        elif khoa == "kinh_te":
+            if label == 1:
+                nganh = "QA với xếp loại xuất sắc"
+                labels.append(nganh)
+            elif label == 2:
+                nganh = "QA với xếp loại giỏi"
+                labels.append(nganh)
+            elif label == 3:
+                nganh = "QA với xếp loại khá"
+                labels.append(nganh)
+            elif label == 4:
+                nganh = "QA với xếp loại trung bình khá"
+                labels.append(nganh)
+            elif label == 5:
+                nganh = "QA với xếp loại trung bình"
+                labels.append(nganh)
+            elif label == 6:
+                nganh = "QB với xếp loại xuất sắc"
+                labels.append(nganh)
+            elif label == 7:
+                nganh = "QB với xếp loại giỏi"
+                labels.append(nganh)
+            elif label == 8:
+                nganh = "QB với xếp loại khá"
+                labels.append(nganh)
+            elif label == 9:
+                nganh = "QB với xếp loại trung bình khá"
+                labels.append(nganh)
+            elif label == 10:
+                nganh = "QB với xếp loại trung bình"
+                labels.append(nganh)
+            elif label == 11:
+                nganh = "QE với xếp loại xuất sắc"
+                labels.append(nganh)
+            elif label == 12:
+                nganh = "QE với xếp loại giỏi"
+                labels.append(nganh)
+            elif label == 13:
+                nganh = "QE với xếp loại khá"
+                labels.append(nganh)
+            elif label == 14:
+                nganh = "QE với xếp loại trung bình khá"
+                labels.append(nganh)
+            elif label == 15:
+                nganh = "QE với xếp loại trung bình"
+                labels.append(nganh)
+            elif label == 16:
+                nganh = "QM với xếp loại xuất sắc"
+                labels.append(nganh)
+            elif label == 17:
+                nganh = "QM với xếp loại giỏi"
+                labels.append(nganh)
+            elif label == 18:
+                nganh = "QM với xếp loại khá"
+                labels.append(nganh)
+            elif label == 19:
+                nganh = "QM với xếp loại trung bình khá"
+            elif label == 20:
+                nganh = "QM với xếp loại trung bình"
+                labels.append(nganh)
+            if max <= (label % 5): 
+                recommend = nganh[0:2]
+        if khoa == "ngon_ngu":
+            if label == 1:
+                nganh = "NE với xếp loại xuất sắc"
+                labels.append(nganh)
+            elif label == 2:
+                nganh = "NE với xếp loại giỏi"
+                labels.append(nganh)
+            elif label == 3:
+                nganh = "NE với xếp loại khá"
+                labels.append(nganh)
+            elif label == 4:
+                nganh = "NE với xếp loại trung bình khá"
+                labels.append(nganh)
+            elif label == 5:
+                nganh = "NE với xếp loại trung bình"
+                labels.append(nganh)
+            elif label == 6:
+                nganh = "NJ với xếp loại xuất sắc"
+                labels.append(nganh)
+            elif label == 7:
+                nganh = "NJ với xếp loại giỏi"
+                labels.append(nganh)
+            elif label == 8:
+                nganh = "NJ với xếp loại khá"
+                labels.append(nganh)
+            elif label == 9:
+                nganh = "NJ với xếp loại trung bình khá"
+                labels.append(nganh)
+            elif label == 10:
+                nganh = "NJ với xếp loại trung bình"
+                labels.append(nganh)
+            elif label == 11:
+                nganh = "NK với xếp loại xuất sắc"
+                labels.append(nganh)
+            elif label == 12:
+                nganh = "NK với xếp loại giỏi"
+                labels.append(nganh)
+            elif label == 13:
+                nganh = "NK với xếp loại khá"
+                labels.append(nganh)
+            elif label == 14:
+                nganh = "NK với xếp loại trung bình khá"
+                labels.append(nganh)
+            elif label == 15:
+                nganh = "NK với xếp loại trung bình"
+                labels.append(nganh)
+            elif label == 16:
+                nganh = "NZ với xếp loại xuất sắc"
+                labels.append(nganh)
+            elif label == 17:
+                nganh = "NZ với xếp loại giỏi"
+                labels.append(nganh)
+            elif label == 18:
+                nganh = "NZ với xếp loại khá"
+                labels.append(nganh)
+            elif label == 19:
+                nganh = "NZ với xếp loại trung bình khá"
+            elif label == 20:
+                nganh = "NZ với xếp loại trung bình"
+                labels.append(nganh)
+            if max <= (label % 5): 
+                recommend = nganh[0:2]
+    print("label: ", labels)
+    print("recommend: ", recommend)
+    return labels, recommend
+
+def transform_label_knn(labels, khoa):
     results = []
     recommend = []
     max = 1
-    for label in labels:
-        nganh = ""
-        number = int(label / 4)
-        if number == 0:
-            nganh = "TC "
-        elif number == 1:
-            nganh = "TI "
-        elif number == 2:
-            nganh = "TE "
-        else:
-            nganh = "TM "
+    print("khoa: ", khoa)
+    if khoa == "toan_tin":
+        for label in labels[0:5]:
+            nganh = ""
+            number = int(label / 4)
+            if number == 0:
+                nganh = "TC "
+            elif number == 1:
+                nganh = "TE "
+            elif number == 2:
+                nganh = "TI "
+            else:
+                nganh = "TM "
 
-        xeploai = label % 4
-        # if xeploai == 0:
-        #     result = result + " với xếp loại trung bình"
-        # elif xeploai == 1:
-        #     result = result + "với xếp loại trung bình khá "
-        # elif xeploai == 2:
-        #     result = result + "với xếp loại khá "
-        # else:
-        #     result = result + "với xếp loại giỏi "
+            xeploai = label % 5
+            if xeploai == 0:
+                result = nganh + "với xếp loại trung bình"
+            elif xeploai == 1:
+                result = nganh + "với xếp loại trung bình khá"
+            elif xeploai == 2:
+                result = nganh + "với xếp loại khá"
+            elif xeploai == 3:
+                result = nganh + "với xếp loại giỏi"
+            else:
+                result = nganh + "với xếp loại xuất sắc"
+            
+            if xeploai > max:
+                if len(recommend) > 0:
+                    recommend.pop(0)
+                recommend.append(nganh)
+                max = xeploai
+            elif xeploai == max:
+                recommend.append(nganh)
+            
+            results.append(result)
+    elif khoa == "kinh_te":
+        for label in labels[0:5]:
+            nganh = ""
+            number = int(label / 4)
+            if number == 0:
+                nganh = "QA "
+            elif number == 1:
+                nganh = "QB "
+            elif number == 2:
+                nganh = "QE "
+            else:
+                nganh = "QM "
 
-        if xeploai == 0:
-            result = nganh + "voi xep loai trung binh"
-        elif xeploai == 1:
-            result = nganh + "voi xep loai trung binh kha"
-        elif xeploai == 2:
-            result = nganh + "voi xep loai kha "
+            xeploai = label % 5
+            if xeploai == 0:
+                result = nganh + "với xếp loại trung bình"
+            elif xeploai == 1:
+                result = nganh + "với xếp loại trung bình khá"
+            elif xeploai == 2:
+                result = nganh + "với xếp loại khá"
+            elif xeploai == 3:
+                result = nganh + "với xếp loại giỏi"
+            else:
+                result = nganh + "với xếp loại xuất sắc"
+            
+            if xeploai > max:
+                if len(recommend) > 0:
+                    recommend.pop(0)
+                recommend.append(nganh)
+                max = xeploai
+            elif xeploai == max:
+                recommend.append(nganh)
+            
+            results.append(result)
+    else:
+        for label in labels[0:5]:
+            nganh = ""
+            number = int(label / 4)
+            if number == 0:
+                nganh = "NE "
+            elif number == 1:
+                nganh = "NJ "
+            elif number == 2:
+                nganh = "NK "
+            else:
+                nganh = "NZ "
+
+            xeploai = label % 5
+            if xeploai == 0:
+                result = nganh + "với xếp loại trung bình"
+            elif xeploai == 1:
+                result = nganh + "với xếp loại trung bình khá"
+            elif xeploai == 2:
+                result = nganh + "với xếp loại khá"
+            elif xeploai == 3:
+                result = nganh + "với xếp loại giỏi"
+            else:
+                result = nganh + "với xếp loại xuất sắc"
+            
+            if xeploai > max:
+                if len(recommend) > 0:
+                    recommend.pop(0)
+                recommend.append(nganh)
+                max = xeploai
+            elif xeploai == max:
+                recommend.append(nganh)
+            
+            results.append(result)
+    recommend = set(recommend)
+    recommend = list(recommend)
+    recommendd = ""
+    for reco in recommend:
+        if len(recommendd) < 1:
+            recommendd = reco
         else:
-            result = nganh + "voi xep loai gioi "
-        
-        if xeploai > max:
-            if len(recommend) > 0:
-                recommend.pop(0)
-            recommend.append(nganh)
-            max = xeploai
-        elif xeploai == max:
-            recommend.append(nganh)
-        
-        results.append(result)
-    return results, recommend
+            recommendd = recommendd + ", " + reco
+    print("result: ", results)
+    return results, recommendd

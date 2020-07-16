@@ -13,9 +13,19 @@ class Score(object):
     @staticmethod
     def find_one(query):
         score = DB.find_one(collection=constant.MONGO_COLLECTION_SCORE, query=query)
+        
         if score is None:
             return -1
+        print("score: ", score["score"])
         return score["score"]
+
+    @staticmethod
+    def find_one_sample(query):
+        score = DB.find_one(collection=constant.MONGO_COLLECTION_SCORE, query=query)
+        if score is None:
+            return -1
+        print("score: ", score["score"])
+        return score["score"], score["max"]
 
     @staticmethod
     def delete(id):

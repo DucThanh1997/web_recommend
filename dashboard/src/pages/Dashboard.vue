@@ -26,26 +26,13 @@
     </div>
     <br>
     <h2>3. Nhập các tham số đầu vào </h2>
-    <div v-if="thuat_toan === 'Knn'">
-        <h3 style="margin-top:10px">- Chia tập training và testing </h3>
-        <form>
-            0 
-            <input
-                style="margin-top:10px"
-                type="range"
-                class="custom-range slider"
-                id="customRange"
-                name="points1"
-                min="0"
-                v-bind:max="max"
-                v-bind:value="training"
-                v-on:input="onChg($event)">
-            100
-        </form>
-        <p style="" class="para">Huấn luyện: {{ training }} % </p>
-        <p style="margin-top:1px" class="para">Thử nghiệm: {{ testing }} % </p>
-
-        <label for="neighbour" class="para">Số láng giềng: </label>
+    <div v-if="thuat_toan === 'knn'">
+        <h3 style="margin-top:10px">- Chia tập dữ liệu thành </h3>
+        <md-input class="para"
+            type="text" 
+            v-model="training">
+        </md-input>
+        <h3 style="margin-top:10px">- Chọn số neighbour </h3>
         <md-input class="para"
             type="text" 
             v-model="neighbour">
@@ -54,50 +41,20 @@
     </div>
 
     <div v-if="thuat_toan === 'ID3'">
-        <h3 style="margin-top:10px">- Chia tập training và testing </h3>
-        0 
-        <input
-            style="margin-top:10px"
-            type="range"
-            class="slider custom-range"
-            id="customRange"
-            min="0"
-            v-bind:max="max"
-            v-bind:value="training"
-            v-on:input="onChg($event)">
-          100
-        <p style="margin-top:20px" class="para">Huấn luyện: {{ training }} % </p>
-        <p style="margin-top:1px" class="para">Thử nghiệm: {{ testing }} % </p>
+        <h3 style="margin-top:10px">- Chia tập dữ liệu thành </h3>
+        <md-input class="para"
+            type="text" 
+            v-model="training">
+        </md-input>
 
     </div>
 
     <div v-if="thuat_toan === 'naive'">
-        <h3 style="margin-top:10px">- Chia tập training và testing </h3>
-        0 
-        <input
-            type="range"
-            class="slider"
-            min="0"
-            v-bind:max="max"
-
-            v-bind:value="training"
-            
-            v-on:input="onChg($event)">
-          100
-        <p style="margin-top:20px" class="para">Huấn luyện: {{ training }} % </p>
-        <p style="margin-top:1px" class="para">Thử nghiệm: {{ testing }} % </p>
-
-        <h3 style="margin-top:10px">- Lựa chọn phân phối </h3>
-        <div class="md-layout-item md-small-size-100 md-size-33">
-          <md-field>
-            <label for="movie">Thuật toán</label>
-            <md-select v-model="phan_phoi" name="" id="">
-                <md-option value="Gaussian">Gaussian</md-option>
-                <md-option value="Multinomial">Multinomial</md-option>
-                <md-option value="Bernoulli">Bernoulli</md-option>
-            </md-select>
-          </md-field>
-        </div>
+        <h3 style="margin-top:10px">- Chia tập dữ liệu thành </h3>
+        <md-input class="para"
+            type="text" 
+            v-model="training">
+        </md-input>
     </div>
     <br>
     <h2>4. Nhập dữ liệu đầu vào </h2>
@@ -112,7 +69,7 @@
     <br>
     <br>
     <h2>5. Kết quả </h2>
-    <p style="margin-top:10px">Độ chính xác: {{score * 100}}%</p>
+    <p style="margin-top:10px; font-size:18px">Độ chính xác: {{score * 100}}%</p>
   </div>
 </template>
 
@@ -129,7 +86,6 @@ export default {
       min: 0,
       training: 0,
       testing: 0,
-      phan_phoi: '',
       neighbour: 0,
     }
   },
@@ -144,13 +100,11 @@ export default {
     },
     onSubmit(){
       let formData = new FormData()
-      console.log("phan_phoi: ", this.phan_phoi)
       formData.append('resource_csv',this.files, this.files.name)
       formData.append('thuat_toan', this.thuat_toan)
       formData.append('khoa', this.khoa)
       formData.append('training_percent', this.training)
       formData.append('testing_percent', this.testing)
-      formData.append('phan_phoi', this.phan_phoi)
       formData.append('neighbour', this.neighbour)
       
       axios.post('http://127.0.0.1:5000/training-overall', formData).then(response=>{

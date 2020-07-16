@@ -1,7 +1,7 @@
 <template>
   <div class="content">
     <h1 style="text-align: center"> Hệ hỗ trợ ra quyết định </h1>
-    <h2>1. Lựa chọn thuật toán </h2>
+    <h2>1. Lựa chọn khoa </h2>
     <div class="md-layout-item md-small-size-100 md-size-33" style="font-size: 25px">
       <md-field>
         <label for="movie">Khoa</label>
@@ -13,7 +13,7 @@
       </md-field>
     </div>
     <br>
-    <h2>2. Lựa chọn khoa </h2>
+    <h2>2. Lựa chọn thuật toán </h2>
     
     <div class="md-layout-item md-small-size-100 md-size-33" style="font-size: 25px">
       <md-field>
@@ -39,16 +39,17 @@
         </md-button>
         <p id="showData"></p>
     </div>
-    <p class="para"> Những môn bị thừa: {{unecessary_subject}}</p>
-    <p class="para"> Những môn bị thiếu: {{incompliance_subject}}</p>
     <md-button type="button" @click="onSubmit" class="md-button md-raised md-success md-theme-default">Dự đoán</md-button>
 
     <br>
     <h2 style="margin-top: 20px;" >4. Kết quả </h2>
-    <p style="margin-top:10px" class="para">Dự đoán xếp loại tốt nghiệp: {{toan_tin}} với độ chính xác là {{score}}%</p>
-      <!-- <p style="margin-top:10px">Dự đoán xếp loại tốt nghiệp TE: {{kinh_te}} với độ chính xác là {{score}}%</p>
-      <p style="margin-top:10px">Dự đoán xếp loại tốt nghiệp TC: {{ngon_ngu}} với độ chính xác là {{score}}%</p>
-      <p style="margin-top:10px">Dự đoán xếp loại tốt nghiệp TM: {{y_te}} với độ chính xác là {{score}}%</p> -->
+    <p style="margin-top:10px" class="para">Dự đoán xếp loại tốt nghiệp: </p>
+    <ul id="example-1">
+      <li v-for="item in result">
+        {{ item }}
+      </li>
+    </ul>
+    <p style="margin-top:10px" class="para">Với độ chính xác là {{score}}%</p>
     
     <br>
     <h2 style="margin-top: 20px;" >5. Lời khuyên </h2>
@@ -65,7 +66,7 @@ export default {
             file: "",
             thuat_toan: '',
             khoa: '',
-            toan_tin: '',
+            result: '',
             kinh_te: '',
             ngon_ngu: '',
             y_te: '',
@@ -89,13 +90,7 @@ export default {
             formData.append('khoa', this.khoa)
             axios.post('http://127.0.0.1:5000/preprocess', formData).then((response) => {
                 this.row = response.data.ordered_result_list,
-                this.header = response.data.predict_subjects,
-                this.unecessary_subject = response.data.unecessary_subject,
-                this.incompliance_subject = response.data.incompliance_subject,
-                console.log("unecessary_subject: ", this.unecessary_subject)
-                console.log("incompliance_subject: ", this.incompliance_subject)
-                console.log("this.row: ", this.row)
-                console.log("this.header: ", this.header)
+                this.header = response.data.predict_subjects
             })
             
         },
@@ -132,7 +127,7 @@ export default {
             formData.append('thuat_toan', this.thuat_toan)
             formData.append('khoa', this.khoa)
             axios.post('http://127.0.0.1:5000/predict-overall', formData).then(response=>{
-                this.toan_tin = response.data.toan_tin
+                this.result = response.data.toan_tin
                 this.score = response.data.score
                 this.recommend = response.data.recommend
             })

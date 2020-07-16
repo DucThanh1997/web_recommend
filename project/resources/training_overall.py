@@ -14,8 +14,8 @@ from sklearn.metrics import accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from werkzeug.datastructures import FileStorage
 from sklearn import tree
-
-
+from sklearn.model_selection import cross_val_score
+from statistics import mean
 
 
 class TrainingOverall(Resource):
@@ -42,9 +42,6 @@ class TrainingOverall(Resource):
                          type=int, 
                          required=True,
                          help="ko duoc bo trong")
-        parser.add_argument('phan_phoi',
-                         type=str, 
-                         help="ko duoc bo trong")
         parser.add_argument('neighbour',
                          type=str, 
                          help="ko duoc bo trong")
@@ -58,7 +55,7 @@ class TrainingOverall(Resource):
             return {
                 "msg": "Bad request"
             }, 400
-        if data["thuat_toan"] == "Knn":
+        if data["thuat_toan"] == "knn":
             if data["neighbour"] == '':
                 neighbour = 3
             else:
@@ -68,26 +65,21 @@ class TrainingOverall(Resource):
             score = TrainKnn(data= dataToPredict, 
                              name= data["khoa"], 
                              neighbour= neighbour, 
-                             training= data["training_percent"] / 100,
-                             testing= testing)
+                             training= data["training_percent"])
             header = list(dataToPredict.columns.values)
 
         elif data["thuat_toan"] == "naive":
-            print("phan_phoi: ", data["phan_phoi"])
             testing = float(data["testing_percent"]) / 100
             score = TrainNaiveBayes(data=dataToPredict, 
                                     name=data["khoa"], 
                                     training=data["training_percent"],
-                                    testing=testing,
-                                    phan_phoi=data["phan_phoi"])
+                                    testing=testing)
 
         else:
-            print("1: ", data["phan_phoi"])
             data["training_percent"]
             score = TrainID3(data=dataToPredict, 
                              name=data["khoa"], 
-                             training=data["training_percent"],
-                             testing=data["testing_percent"])
+                             training=data["training_percent"])
         result_save_header = save_header(headers=header[1:-1], khoa=data["khoa"], thuat_toan=data["thuat_toan"])
         if result_save_header != "okke":
             return {
@@ -103,25 +95,31 @@ class TrainingOverall(Resource):
             "score": score
         }, 200
 
-def TrainKnn(data, name, neighbour, training, testing):
+def TrainKnn(data, name, neighbour, training):
     features = data.iloc[:-1, 1:-1].values
     label = data.iloc[:-1, -1].values
-    classifier = KNeighborsClassifier(n_neighbors=neighbour)
+    classifier = KNeighborsClassifier(n_neighbors=neighbour, weights="distance", p=2)
 
-    X_train, X_test, y_train, y_test = train_test_split(features, label, test_size=testing)
+    X_train, X_test, y_train, y_test = train_test_split(features, label, test_size=0.05)
     # save traine_model
     result_save_to_db = save_training_to_mongo(train=X_train, 
                                                label=y_train,
                                                thuat_toan="knn",
                                                khoa=name)
-    print("result_save_to_db: ", result_save_to_db)
-    if result_save_to_db != "okke":
-        return -1
+    # print("result_save_to_db: ", result_save_to_db)
+    # if result_save_to_db != "okke":
+    #     return -1
 
+
+    scores = cross_val_score(classifier, features, label, cv=training)
     classifier.fit(X_train, y_train.astype('int'))
     y_pred = classifier.predict(X_test)
     score = accuracy_score(y_test.astype('int'), y_pred)
-    round_score = saved_score(score=score, model_name=name + "_" + "knn")
+    round_score = saved_score(score=max(scores), model_name=name + "_" + "knn")
+    print("scores: ", scores)
+    print("mean: ", mean(scores))
+    print("round score: ", round_score)
+    print("score: ", score)
 
     result_save_to_db = save_model(classifier=classifier,
                                    thuat_toan="knn",
@@ -131,32 +129,28 @@ def TrainKnn(data, name, neighbour, training, testing):
     return round_score
 
 
-def TrainNaiveBayes(data, name, training, testing, phan_phoi):
+def TrainNaiveBayes(data, name, training, testing):
     # loc du lieu
     X = data.iloc[:, 1:-1].values
     y = data.iloc[:, -1].values
 
     # train va du doan
     try:
-        if phan_phoi == "Multinomial":
-            model = MultinomialNB()
-        elif phan_phoi == "Bernoulli":
-            model = BernoulliNB()
-        else:
-            model = GaussianNB()
+        print("1")
+        model = GaussianNB()
         model.fit(X, y)
-        
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=testing)
-        result_save_to_db = save_training_to_mongo(train=X_train, 
-                                            label=y_train,
-                                            thuat_toan="naive",
-                                            khoa=name)
-        if result_save_to_db != "okke":
-            return 0
+        print("2")
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=testing)
+        # result_save_to_db = save_training_to_mongo(train=X_train, 
+        #                                     label=y_train,
+        #                                     thuat_toan="naive",
+        #                                     khoa=name)
+        # if result_save_to_db != "okke":
+        #     return 0
 
-        y_pred = model.predict(X_test)
-        score = accuracy_score(y_test, y_pred)
-        round_score = saved_score(score=score, model_name=name + "_" + "naive")
+        scores = cross_val_score(model, X, y, cv=training)
+        print("scores: ", scores)
+        round_score = saved_score(score=max(scores), model_name=name + "_" + "naive")
 
         result_save_to_db = save_model(classifier=model,
                                        thuat_toan="naive",
@@ -170,20 +164,24 @@ def TrainNaiveBayes(data, name, training, testing, phan_phoi):
         return score
     return round_score
 
-def TrainID3(data, name, training, testing):
+def TrainID3(data, name, training):
     features = data.iloc[:-1, 1:-1].values
     label = data.iloc[:-1, -1].values
 
+    X_train, X_test, y_train, y_test = train_test_split(features, label, test_size=0.05)
     decisionTree = tree.DecisionTreeClassifier(max_depth=None, criterion='entropy', class_weight=None)
-    X_train, X_test, y_train, y_test = train_test_split(features, label, test_size=testing, train_size=training)
-    result_save_to_db = save_training_to_mongo(train=X_train, 
-                                        label=y_train,
-                                        thuat_toan="naive",
-                                        khoa=name)
-    if result_save_to_db != "okke":
-        return 0
-    y_pred = decisionTree.predict(X_test)
-    score = accuracy_score(y_test, y_pred)
+    decisionTree.fit(X_train, y_train)
+    # result_save_to_db = save_training_to_mongo(train=X_train, 
+    #                                     label=y_train,
+    #                                     thuat_toan="naive",
+    #                                     khoa=name)
+    # if result_save_to_db != "okke":
+    #     return 0
+
+    scores = cross_val_score(decisionTree, features, label, cv=training)
+
+    # y_pred = decisionTree.predict(X_test)
+    # score = accuracy_score(y_test, y_pred)
 
 
     result_save_to_db = save_model(classifier=decisionTree,
@@ -193,6 +191,10 @@ def TrainID3(data, name, training, testing):
         return 0
 
     # lưu score
-    round_score = saved_score(score=score, model_name=name + "_" + "id3")
+    round_score = saved_score(score=max(scores), model_name=name + "_" + "id3")
+    print("scores: ", scores)
+    print("mean: ", mean(scores))
+    print("round score: ", round_score)
+    # print("score: ", score)
     return round_score
 
