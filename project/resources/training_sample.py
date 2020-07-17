@@ -36,9 +36,6 @@ class TrainingSample(Resource):
                          type=int, 
                          required=True,
                          help="ko duoc bo trong")
-        parser.add_argument('phan_phoi',
-                         type=str, 
-                         help="ko duoc bo trong")
         parser.add_argument('neighbour',
                          type=str, 
                          help="ko duoc bo trong")
@@ -66,7 +63,6 @@ class TrainingSample(Resource):
             
 
         elif data["thuat_toan"] == "naive":
-            print("phan_phoi: ", data["phan_phoi"])
             print("testing_percent: ", data["testing_percent"])
             print("testing_percent: ", type(data["testing_percent"]))
             testtt = float(20 / 100)
@@ -76,7 +72,6 @@ class TrainingSample(Resource):
                                     testing=testtt)
 
         else:
-            print("1: ", data["phan_phoi"])
             data["training_percent"]
             score = TrainID3Sample(data=dataToPredict, 
                              testing=data["testing_percent"])
@@ -101,7 +96,7 @@ def TrainKnnSample(data, neighbour, training, testing):
     
     a = data.shape
 
-    data_changed, maxx = Processing_data_knn(data=data, columns=a[1])
+    data_changed, maxx, minn = Processing_data_knn(data=data, columns=a[1])
     print("change data okke")
     if type(data_changed) is int:
         print("van de data")
@@ -125,7 +120,7 @@ def TrainKnnSample(data, neighbour, training, testing):
     classifier.fit(X_train, y_train.astype('int'))
     y_pred = classifier.predict(X_test)
     score = accuracy_score(y_test.astype('int'), y_pred)
-    round_score = saved_score(score=score, model_name="sample" + "_" + "knn", maxx = maxx)
+    round_score = saved_score(score=score, model_name="sample" + "_" + "knn", maxx = maxx, minn = minn)
 
     result_save_to_db = save_model(classifier=classifier,
                                    thuat_toan="knn",
@@ -177,17 +172,16 @@ def TrainID3Sample(data, testing):
 
     print("column: ", data.shape[1])
 
-    for column in range(1,data.shape[1]):
+    for column in range(0,data.shape[1]):
         value = data.iloc[:, column].values
         feauture = value.tolist()
         print("feauture: ", feauture)
         if checktype(obj=feauture, type=str) is True:
-            print("1")
             changed = le.fit_transform(feauture)
             data.iloc[:, column] = changed
         else:
             print(column)
-    features = data.iloc[:-1, 1:-1].values
+    features = data.iloc[:-1, :-1].values
     label = data.iloc[:-1, -1].values
     print(data)
     X_train, X_test, y_train, y_test = train_test_split(features, label, test_size=(testing/100))
@@ -195,7 +189,7 @@ def TrainID3Sample(data, testing):
     decisionTree.fit(X_train, y_train)
     # result_save_to_db = save_training_to_mongo(train=X_train, 
     #                                     label=y_train,
-    #                                     thuat_toan="naive",
+    #                                     thuat_toan="id3",
     #                                     khoa=name)
     # if result_save_to_db != "okke":
     #     return 0

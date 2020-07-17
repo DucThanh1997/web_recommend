@@ -56,7 +56,6 @@ def save_model(thuat_toan, khoa, classifier):
         pkl_filename = khoa + "_" + thuat_toan + ".pkl"
         with open(pkl_filename, 'wb') as file:
             pickle.dump(classifier, file)
-        print("2")
         return "okke"
     except Exception as e:
         print("err: ", e)
@@ -64,7 +63,7 @@ def save_model(thuat_toan, khoa, classifier):
 
 
 
-def saved_score(score, model_name, maxx=[]):
+def saved_score(score, model_name, maxx=[], minn=[]):
     score_saved = Score.find_one({
         "train_model": model_name
         })
@@ -73,12 +72,14 @@ def saved_score(score, model_name, maxx=[]):
         Score.insert(data= {
             "train_model": model_name,
             "score": round_score * 100,
-            "max": maxx
+            "max": maxx,
+            "min": minn
         })
     else:
         Score.update_one(query= {"train_model": model_name},
                          change= {
                             "score": round_score * 100,
-                            "max": maxx
+                            "max": maxx,
+                            "min": minn
                          })
     return round_score

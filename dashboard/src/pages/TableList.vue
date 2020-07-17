@@ -76,17 +76,6 @@
         <p style="margin-top:20px" class="para">Huấn luyện: {{ training }} % </p>
         <p style="margin-top:1px" class="para">Thử nghiệm: {{ testing }} % </p>
 
-        <h3 style="margin-top:10px">- Lựa chọn phân phối </h3>
-        <div class="md-layout-item md-small-size-100 md-size-33">
-          <md-field>
-            <label for="movie">Thuật toán</label>
-            <md-select v-model="phan_phoi" name="" id="">
-                <md-option value="Gaussian">Gaussian</md-option>
-                <md-option value="Multinomial">Multinomial</md-option>
-                <md-option value="Bernoulli">Bernoulli</md-option>
-            </md-select>
-          </md-field>
-        </div>
     </div>
     <br>
     <h2>3. Nhập dữ liệu đầu vào </h2>
@@ -118,7 +107,6 @@ export default {
       min: 0,
       training: 0,
       testing: 0,
-      phan_phoi: '',
       neighbour: 0,
     }
   },
@@ -139,7 +127,6 @@ export default {
       formData.append('khoa', this.khoa)
       formData.append('training_percent', this.training)
       formData.append('testing_percent', this.testing)
-      formData.append('phan_phoi', this.phan_phoi)
       formData.append('neighbour', this.neighbour)
       
       axios.post('http://127.0.0.1:5000/train-sample', formData).then(response=>{

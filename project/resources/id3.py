@@ -28,7 +28,6 @@ class ID3(Resource):
         #                  required=True,
         #                  help='CSV file')
         # data = parser.parse_args()
-        print("1")
         test = pd.DataFrame({'C1': 0, 
                              'C2': 4,
                              'C3': 1,
@@ -45,12 +44,10 @@ class ID3(Resource):
                              'C14': 0, 
                              },
                     index=[1])
-        print("2")
         filename = "id3.pkl"
 
         try: 
             tree = pickle.load(open(filename, 'rb'))
-            print("3")
             predict = tree.predict(test)[0],
             print("pre: ", predict)
         except Exception as e:

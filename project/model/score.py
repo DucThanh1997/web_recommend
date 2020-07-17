@@ -25,7 +25,7 @@ class Score(object):
         if score is None:
             return -1
         print("score: ", score["score"])
-        return score["score"], score["max"]
+        return score["score"], score["max"], score["min"]
 
     @staticmethod
     def delete(id):

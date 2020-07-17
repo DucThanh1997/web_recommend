@@ -137,13 +137,14 @@ def transformed_mark_to_number_and_predict_knn_sample(data):
     model = pickle.load(open(filename, 'rb'))
     result = []
     # load saved_score
-    saved_score, maxx = Score.find_one_sample(query={"train_model": "sample_knn"})
+    saved_score, maxx, minn = Score.find_one_sample(query={"train_model": "sample_knn"})
     mark_transformed = []
     print("data1: ", data)
     for index, value in enumerate(data):
         print("value: ", value)
         print("max: ", maxx[index])
-        value_transformed = int(value) / maxx[index]
+        print("min: ", minn[index])
+        value_transformed = (int(value) - minn[index]) / (maxx[index] - minn[index])
         print("value_transformed: ", value_transformed)
         mark_transformed.append(value_transformed)
     
@@ -157,14 +158,53 @@ def transformed_mark_to_number_and_predict_knn_sample(data):
 
 
 def transformed_mark_to_number_and_predict_id3_sample(list_student, khoa):
+    print("list_student: ", list_student)
     filename = khoa + "_id3.pkl"
     model = pickle.load(open(filename, 'rb'))
     result = []
+    transform_data = []
     # load saved_score
     saved_score = Score.find_one(query={"train_model": khoa + "_id3"})
-
-    proba = model.predict_proba([list_student[1:]])
-    predicted = model.predict([list_student[1:]])
+    transform_data = []
+    for index, data in enumerate(list_student):
+        if index == 0:
+            if data == "sunny":
+                print("sunny")
+                transform_data.append(2)
+            elif data == "overcast":
+                print("overcast")
+                transform_data.append(0)
+            else:
+                print("rainy")
+                transform_data.append(1)
+        elif index == 1:
+            if data == "hot":
+                print("hot")
+                transform_data.append(1)
+            elif data == "mild":
+                print("mild")
+                transform_data.append(2)
+            else:
+                print("cold")
+                transform_data.append(0)
+        elif index == 2:
+            if data == "normal":
+                print("normal")
+                transform_data.append(1)
+            else:
+                print("high")
+                transform_data.append(0)
+        elif index == 3:
+            if data == "weak":
+                print("weak")
+                transform_data.append(1)
+            else:
+                print("high")
+                transform_data.append(0)
+        
+    print("transformed_data: ", transform_data)    
+    proba = model.predict_proba([transform_data])
+    predicted = model.predict([transform_data])
     # print("label: ", labels)
     print("predicted: ", predicted)
     return predicted, saved_score

@@ -19,11 +19,12 @@ def Processing_data_knn(data, columns):
             print(column)
             long_column.append(column)
     try:
-        print("data: ", data)
         maxx = []
+        minn = []
         for column in range(0,columns):
             value = data.iloc[:, column].values
             maxx.append(int(np.amax(value)))
+            minn.append(int(np.amin(value)))
 
         value = data.iloc[:, long_column].values
         
@@ -34,7 +35,7 @@ def Processing_data_knn(data, columns):
         print("err: ", e)
         return 0
 
-    return data, maxx
+    return data, maxx, minn
 
 def checktype(obj, type):
     return bool(obj) and all(isinstance(elem, type) for elem in obj)

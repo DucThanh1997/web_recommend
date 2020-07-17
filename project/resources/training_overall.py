@@ -136,10 +136,8 @@ def TrainNaiveBayes(data, name, training, testing):
 
     # train va du doan
     try:
-        print("1")
         model = GaussianNB()
         model.fit(X, y)
-        print("2")
         # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=testing)
         # result_save_to_db = save_training_to_mongo(train=X_train, 
         #                                     label=y_train,
