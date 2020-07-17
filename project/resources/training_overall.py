@@ -16,7 +16,9 @@ from werkzeug.datastructures import FileStorage
 from sklearn import tree
 from sklearn.model_selection import cross_val_score
 from statistics import mean
-
+from id3 import Id3Estimator
+from id3 import export_graphviz
+import pydot
 
 class TrainingOverall(Resource):
     def post(self):
@@ -116,10 +118,7 @@ def TrainKnn(data, name, neighbour, training):
     y_pred = classifier.predict(X_test)
     score = accuracy_score(y_test.astype('int'), y_pred)
     round_score = saved_score(score=max(scores), model_name=name + "_" + "knn")
-    print("scores: ", scores)
-    print("mean: ", mean(scores))
     print("round score: ", round_score)
-    print("score: ", score)
 
     result_save_to_db = save_model(classifier=classifier,
                                    thuat_toan="knn",
@@ -165,14 +164,21 @@ def TrainNaiveBayes(data, name, training, testing):
 def TrainID3(data, name, training):
     features = data.iloc[:-1, 1:-1].values
     label = data.iloc[:-1, -1].values
-
+    print("header: ", data.columns.tolist()[1:-1])
     X_train, X_test, y_train, y_test = train_test_split(features, label, test_size=0.05)
     decisionTree = tree.DecisionTreeClassifier(max_depth=None, criterion='entropy', class_weight=None)
     decisionTree.fit(X_train, y_train)
-    # result_save_to_db = save_training_to_mongo(train=X_train, 
-    #                                     label=y_train,
-    #                                     thuat_toan="naive",
-    #                                     khoa=name)
+
+    # estimator = Id3Estimator()
+    # estimator.fit(X_train, y_train)
+    # export_graphviz(estimator.tree_, "./id3_tree/" + name + '.dot', feature_names=data.columns.tolist()[1:])
+
+    (graph,) = pydot.graph_from_dot_file("./id3_tree/" + name + '.dot')
+    graph.write_png("./id3_tree/" + name + '.png')
+    result_save_to_db = save_training_to_mongo(train=X_train, 
+                                        label=y_train,
+                                        thuat_toan="naive",
+                                        khoa=name)
     # if result_save_to_db != "okke":
     #     return 0
 

@@ -229,6 +229,7 @@ def get_label_for_knn(neighbors, model_name):
         }
         label = Train.find_one(query=data)
         labels.append(label)
+    print("labels: ", labels)
     return labels
 
 def get_label_for_naive(proba, khoa):
@@ -441,39 +442,35 @@ def get_label_for_naive(proba, khoa):
 def transform_label_knn(labels, khoa):
     results = []
     recommend = []
-    max = 1
-    print("khoa: ", khoa)
+    max = 2
     if khoa == "toan_tin":
         for label in labels[0:5]:
             nganh = ""
             number = int(label / 4)
-            if number == 0:
+            if number == 1:
                 nganh = "TC "
-            elif number == 1:
-                nganh = "TE "
             elif number == 2:
+                nganh = "TE "
+            elif number == 3:
                 nganh = "TI "
             else:
                 nganh = "TM "
 
             xeploai = label % 5
             if xeploai == 0:
-                result = nganh + "với xếp loại trung bình"
+                result = nganh + "với xếp loại xuất sắc"
             elif xeploai == 1:
-                result = nganh + "với xếp loại trung bình khá"
+                result = nganh + "với xếp loại giỏi"
             elif xeploai == 2:
                 result = nganh + "với xếp loại khá"
             elif xeploai == 3:
-                result = nganh + "với xếp loại giỏi"
+                result = nganh + "với xếp loại trung bình khá"
             else:
-                result = nganh + "với xếp loại xuất sắc"
+                result = nganh + "với xếp loại trung bình"
             
-            if xeploai > max:
-                if len(recommend) > 0:
-                    recommend.pop(0)
-                recommend.append(nganh)
-                max = xeploai
-            elif xeploai == max:
+            print("max: ", max)
+            print("xeploai: ", xeploai)
+            if xeploai <= max:
                 recommend.append(nganh)
             
             results.append(result)
@@ -481,33 +478,30 @@ def transform_label_knn(labels, khoa):
         for label in labels[0:5]:
             nganh = ""
             number = int(label / 4)
-            if number == 0:
+            if number == 1:
                 nganh = "QA "
-            elif number == 1:
-                nganh = "QB "
             elif number == 2:
+                nganh = "QB "
+            elif number == 3:
                 nganh = "QE "
             else:
                 nganh = "QM "
 
             xeploai = label % 5
             if xeploai == 0:
-                result = nganh + "với xếp loại trung bình"
+                result = nganh + "với xếp loại xuất sắc"
             elif xeploai == 1:
-                result = nganh + "với xếp loại trung bình khá"
+                result = nganh + "với xếp loại giỏi"
             elif xeploai == 2:
                 result = nganh + "với xếp loại khá"
             elif xeploai == 3:
-                result = nganh + "với xếp loại giỏi"
+                result = nganh + "với xếp loại trung bình khá"
             else:
-                result = nganh + "với xếp loại xuất sắc"
+                result = nganh + "với xếp loại trung bình"
             
-            if xeploai > max:
-                if len(recommend) > 0:
-                    recommend.pop(0)
-                recommend.append(nganh)
-                max = xeploai
-            elif xeploai == max:
+            print("max: ", max)
+            print("xeploai: ", xeploai)
+            if xeploai <= max:
                 recommend.append(nganh)
             
             results.append(result)
@@ -515,33 +509,29 @@ def transform_label_knn(labels, khoa):
         for label in labels[0:5]:
             nganh = ""
             number = int(label / 4)
-            if number == 0:
+            if number == 1:
                 nganh = "NE "
-            elif number == 1:
-                nganh = "NJ "
             elif number == 2:
+                nganh = "NJ "
+            elif number == 3:
                 nganh = "NK "
             else:
                 nganh = "NZ "
 
             xeploai = label % 5
             if xeploai == 0:
-                result = nganh + "với xếp loại trung bình"
+                result = nganh + "với xếp loại xuất sắc"
             elif xeploai == 1:
-                result = nganh + "với xếp loại trung bình khá"
+                result = nganh + "với xếp loại giỏi"
             elif xeploai == 2:
                 result = nganh + "với xếp loại khá"
             elif xeploai == 3:
-                result = nganh + "với xếp loại giỏi"
+                result = nganh + "với xếp loại trung bình khá"
             else:
-                result = nganh + "với xếp loại xuất sắc"
-            
-            if xeploai > max:
-                if len(recommend) > 0:
-                    recommend.pop(0)
-                recommend.append(nganh)
-                max = xeploai
-            elif xeploai == max:
+                result = nganh + "với xếp loại trung bình"
+            print("max: ", max)
+            print("xeploai: ", xeploai)
+            if xeploai <= max:
                 recommend.append(nganh)
             
             results.append(result)
