@@ -23,7 +23,7 @@
     "es6-promise": "^4.2.8",
     "google-maps": "^4.2.3",
     "material-design-icons": "^3.0.1",
-    "node-sass": "^4.14.1",
+    "node-sass": "^7.0.0",
     "sass-loader": "^7.3.1",
     "vue": "^2.5.2",
     "vue-clickaway": "^2.2.2",
